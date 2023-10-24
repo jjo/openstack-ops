@@ -57,14 +57,8 @@ func actionRun(osClient *openstack.OSClient, instances []openstack.OSResourceInt
 	switch actionCode {
 	case LIST:
 		actionList(instances, outputCode)
-	case STOP, START:
-		actionStopStart(instances, actionCode)
-	case DELETE:
-		actionDelete(instances)
-	case TAG:
-		actionTag(instances)
-	case UNTAG:
-		actionUnTag(instances)
+	case STOP, START, DELETE, TAG, UNTAG:
+		actionPerResource(instances, actionCode)
 	}
 }
 
@@ -107,64 +101,49 @@ func actionList(instances []openstack.OSResourceInterface, outputCode int) {
 	}
 }
 
-func actionDelete(resources []openstack.OSResourceInterface) {
-	for _, resource := range resources {
-		switch yes {
-		case true:
-			log.Infof("Deleting server: %s\n", resource.String())
-			err := resource.Delete()
-			if err != nil {
-				log.Errorf("Error deleting: %s: %s\n", resource.String(), err)
-			}
-		case false:
-			log.Infof("**NOT** Deleting (needs --yes): %s\n", resource.String())
-		}
-	}
+func yesnoStr(yes bool, msg string) string {
+	yn := map[bool]string{true: "", false: "**NOT**(missing --yes) "}[yes]
+	return fmt.Sprintf("%s%s", yn, msg)
 }
 
-func actionStopStart(resources []openstack.OSResourceInterface, actionCode int) {
+func actionPerResource(resources []openstack.OSResourceInterface, actionCode int) {
 	var err error
+	var msg string
 	for _, resource := range resources {
 		switch actionCode {
 		case STOP:
-			switch yes {
-			case true:
-				log.Infof("Stopping: %s\n", resource.String())
+			msg = "Stopping server"
+			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
+			if yes {
 				err = resource.Stop()
-			case false:
-				log.Infof("**NOT** Stopping (needs --yes): %s\n", resource.String())
 			}
 		case START:
-			switch yes {
-			case true:
-				log.Infof("Starting: %s\n", resource.String())
+			msg = "Starting server"
+			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
+			if yes {
 				err = resource.Start()
-			case false:
-				log.Infof("**NOT** Starting (needs --yes): %s\n", resource.String())
+			}
+		case DELETE:
+			msg = "Deleting server"
+			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
+			if yes {
+				err = resource.Delete()
+			}
+		case TAG:
+			msg = "Tagging server"
+			log.Infof("%s: %s <- %s\n", yesnoStr(yes, msg), resource.String(), tagValue)
+			if yes {
+				err = resource.Tag(tagValue)
+			}
+		case UNTAG:
+			msg = "Untagging server"
+			log.Infof("%s: %s <- %s\n", yesnoStr(yes, msg), resource.String(), tagValue)
+			if yes {
+				err = resource.Untag(tagValue)
 			}
 		}
 		if err != nil {
-			log.Errorf("Error starting/stopping server %s: %s\n", resource.String(), err)
-		}
-	}
-}
-
-func actionTag(resources []openstack.OSResourceInterface) {
-	for _, resource := range resources {
-		log.Infof("Tagging: %s\n", resource.String())
-		err := resource.Tag(tagValue)
-		if err != nil {
-			log.Errorf("Error tagging %s\n", resource.String(), err)
-		}
-	}
-}
-
-func actionUnTag(resources []openstack.OSResourceInterface) {
-	for _, resource := range resources {
-		log.Infof("Untagging: %s\n", resource.String())
-		err := resource.Untag(tagValue)
-		if err != nil {
-			log.Errorf("Error untagging: %s: %s\n", resource.String(), err)
+			log.Errorf("Error %s %s: %s\n", msg, resource.String(), err)
 		}
 	}
 }
