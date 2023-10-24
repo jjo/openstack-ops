@@ -79,14 +79,14 @@ func main() {
 	// Calculate the timestamp for nDays ago
 	nDaysAgo := time.Now().AddDate(0, 0, -nDays)
 
-	osClient := openstack.NewOSClient(log)
+	osClient := openstack.NewOSClient(log).WithWorkers(workers)
 
 	filter := openstack.NewOSResourceFilter(nDaysAgo, includeRe, excludeRe, tagValue, tagged)
 	filterFunc := func(resource openstack.OSResourceInterface) bool {
 		return filter.Run(resource)
 	}
 
-	instances, err := osClient.GetInstances(workers, filterFunc)
+	instances, err := osClient.GetInstances(filterFunc)
 	if err != nil {
 		log.Fatal("Error while getting instances:", err)
 	}

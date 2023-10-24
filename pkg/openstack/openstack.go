@@ -21,6 +21,7 @@ type OSClient struct {
 	ProviderClient *gophercloud.ProviderClient
 	ComputeClient  *gophercloud.ServiceClient
 	IdentityClient *gophercloud.ServiceClient
+	workers        int
 	projectsCache  map[string]string
 }
 
@@ -58,10 +59,11 @@ func NewOSClient(globalLog *logging.Logger) *OSClient {
 		ProviderClient: provider,
 		ComputeClient:  computeClient,
 		IdentityClient: identityClient,
+		workers:        1,
 	}
 }
 
-func WithProjectsCache(osClient *OSClient) (*OSClient, error) {
+func (osClient *OSClient) withProjectsCache() (*OSClient, error) {
 	if osClient.projectsCache != nil {
 		return osClient, nil
 	}
@@ -86,8 +88,13 @@ func WithProjectsCache(osClient *OSClient) (*OSClient, error) {
 	return osClient, nil
 }
 
-func (osClient *OSClient) GetInstances(workers int, filter func(OSResourceInterface) bool) ([]OSResourceInterface, error) {
-	osClient, err := WithProjectsCache(osClient)
+func (osClient *OSClient) WithWorkers(workers int) *OSClient {
+	osClient.workers = workers
+	return osClient
+}
+
+func (osClient *OSClient) GetInstances(filter func(OSResourceInterface) bool) ([]OSResourceInterface, error) {
+	osClient, err := osClient.withProjectsCache()
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +123,7 @@ func (osClient *OSClient) GetInstances(workers int, filter func(OSResourceInterf
 	instances := make([]OSResourceInterface, 0)
 	// Iterate over the paginated results and filter instances older than one month
 	mu := &sync.Mutex{}
-	pool := pond.New(workers, 0, pond.MinWorkers(workers))
+	pool := pond.New(osClient.workers, 0, pond.MinWorkers(osClient.workers))
 	for _, serverIterator := range allServers {
 		server := new(ServerWithExt)
 		*server = serverIterator
