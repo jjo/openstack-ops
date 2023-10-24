@@ -15,6 +15,12 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 )
 
+type OSClientInterface interface {
+	GetInstances(filter func(OSResourceInterface) bool) ([]OSResourceInterface, error)
+	WithWorkers(workers int) OSClientInterface
+	WithProjectToEmail(projectToEmail func(OSResourceInterface) string) OSClientInterface
+}
+
 type OSClient struct {
 	ProviderClient *gophercloud.ProviderClient
 	ComputeClient  *gophercloud.ServiceClient
@@ -89,13 +95,13 @@ func (osClient *OSClient) withProjectsCache() (*OSClient, error) {
 	return osClient, nil
 }
 
-func (osClient *OSClient) WithWorkers(workers int) *OSClient {
+func (osClient *OSClient) WithWorkers(workers int) OSClientInterface {
 	log.Debugf("Setting workers to: %d", workers)
 	osClient.workers = workers
 	return osClient
 }
 
-func (osClient *OSClient) WithProjectToEmail(projectToEmail func(OSResourceInterface) string) *OSClient {
+func (osClient *OSClient) WithProjectToEmail(projectToEmail func(OSResourceInterface) string) OSClientInterface {
 	log.Debugf("Setting projectToEmail to: %s", projectToEmail)
 	osClient.projectToEmail = projectToEmail
 	return osClient

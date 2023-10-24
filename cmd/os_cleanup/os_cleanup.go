@@ -69,7 +69,8 @@ func main() {
 		return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
 	}
 
-	osClient := openstack.NewOSClient().
+	var osClient openstack.OSClientInterface
+	osClient = openstack.NewOSClient().
 		WithWorkers(workers).
 		WithProjectToEmail(projectToEmailFunc)
 

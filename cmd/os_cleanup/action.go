@@ -53,7 +53,7 @@ func codeNum(str string, strMap map[string]int) int {
 	return ret
 }
 
-func actionRun(osClient *openstack.OSClient, instances []openstack.OSResourceInterface, actionCode, outputCode int) {
+func actionRun(osClient openstack.OSClientInterface, instances []openstack.OSResourceInterface, actionCode, outputCode int) {
 	switch actionCode {
 	case LIST:
 		actionList(instances, outputCode)

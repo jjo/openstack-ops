@@ -50,10 +50,6 @@ func (instance *Instance) GetRow() []interface{} {
 	return []interface{}{instance.InstanceName, instance.InstanceID, instance.Created, instance.VmState, instance.PowerState, instance.ProjectName, instance.Email, instance.Tags}
 }
 
-type OSClientInterface interface {
-	GetInstances(filter func(OSResourceInterface) bool) ([]OSResourceInterface, error)
-}
-
 func (instance *Instance) Delete() error {
 	return servers.Delete(instance.osClient.ComputeClient, instance.InstanceID).ExtractErr()
 }
