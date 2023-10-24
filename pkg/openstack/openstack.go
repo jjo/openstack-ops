@@ -5,7 +5,8 @@ import (
 	"sync"
 
 	"github.com/alitto/pond"
-	"github.com/op/go-logging"
+
+	"github.com/jjo/openstack-ops/pkg/logger"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -25,11 +26,10 @@ type OSClient struct {
 	projectsCache  map[string]string
 }
 
-var log *logging.Logger
+var log = logger.Log
 
-func NewOSClient(globalLog *logging.Logger) *OSClient {
+func NewOSClient() *OSClient {
 	// Load your OpenStack credentials from environment variables or configuration file
-	log = globalLog
 	authOpts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
 		log.Fatalf("Failed to get OpenStack authentication options (missing OS_* env vars):", err)
@@ -55,6 +55,8 @@ func NewOSClient(globalLog *logging.Logger) *OSClient {
 		log.Fatal("Failed to create Identity service client:", err)
 	}
 
+	log.Debugf("Successfully created clients for auth_url=%s domain=%s user=%s project=%s",
+		authOpts.IdentityEndpoint, authOpts.DomainName, authOpts.Username, authOpts.TenantName)
 	return &OSClient{
 		ProviderClient: provider,
 		ComputeClient:  computeClient,
@@ -84,11 +86,13 @@ func (osClient *OSClient) withProjectsCache() (*OSClient, error) {
 		log.Fatalf("Failed to paginate projects: %s", err)
 		return nil, err
 	}
+	log.Debugf("Created projectsCache: Loaded %d projects", len(osClient.projectsCache))
 
 	return osClient, nil
 }
 
 func (osClient *OSClient) WithWorkers(workers int) *OSClient {
+	log.Debugf("Setting workers to: %d", workers)
 	osClient.workers = workers
 	return osClient
 }

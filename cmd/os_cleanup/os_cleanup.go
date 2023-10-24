@@ -1,12 +1,11 @@
 package main
 
 import (
-	"os"
 	"time"
 
+	"github.com/jjo/openstack-ops/pkg/logger"
 	"github.com/jjo/openstack-ops/pkg/openstack"
 
-	logging "github.com/op/go-logging"
 	"github.com/spf13/pflag"
 )
 
@@ -26,24 +25,9 @@ var (
 	tagValue  string
 	yes       bool
 	workers   int
-	log       *logging.Logger
 )
 
-func setupLogging(module string, out *os.File, logLevel string) *logging.Logger {
-	log = logging.MustGetLogger(module)
-	level, err := logging.LogLevel(logLevel)
-	if err != nil {
-		log.Fatalf("Invalid log level: %s", logLevel)
-	}
-	format := logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000}: %{level:.6s} %{id:03x}%{color:reset} %{message}`,
-	)
-	backend := logging.NewLogBackend(out, "", 0)
-	backendFormatter := logging.NewBackendFormatter(backend, format)
-	logging.SetBackend(backendFormatter)
-	logging.SetLevel(level, module)
-	return log
-}
+var log = logger.Log
 
 func parseFlags() {
 	// Parse the command-line arguments
@@ -63,7 +47,7 @@ func parseFlags() {
 func main() {
 	parseFlags()
 
-	log = setupLogging("os-cleanup", os.Stderr, logLevel)
+	logger.SetLevel(logLevel)
 	if action == "" {
 		log.Fatal("No action specified with: -a <action>, e.g.: -a list")
 	}
@@ -79,7 +63,7 @@ func main() {
 	// Calculate the timestamp for nDays ago
 	nDaysAgo := time.Now().AddDate(0, 0, -nDays)
 
-	osClient := openstack.NewOSClient(log).WithWorkers(workers)
+	osClient := openstack.NewOSClient().WithWorkers(workers)
 
 	filter := openstack.NewOSResourceFilter(nDaysAgo, includeRe, excludeRe, tagValue, tagged)
 	filterFunc := func(resource openstack.OSResourceInterface) bool {
