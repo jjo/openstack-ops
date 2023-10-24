@@ -19,6 +19,7 @@ type OSResourceInterface interface {
 	Untag(string) error
 	String() string
 	StringAll() string
+	GetProjectName() string
 	CreatedBefore(time.Time) bool
 	GetRow() []interface{}
 }
@@ -92,4 +93,8 @@ func (instance *Instance) StringAll() string {
 
 func (instance *Instance) GetTags() []string {
 	return instance.Tags
+}
+
+func (instance *Instance) GetProjectName() string {
+	return instance.ProjectName
 }

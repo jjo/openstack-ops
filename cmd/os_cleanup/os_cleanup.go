@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/jjo/openstack-ops/pkg/logger"
@@ -13,6 +14,8 @@ const (
 	osCleanupTag = "os-cleanup"
 	workerCount  = 10
 )
+
+var mailRe = regexp.MustCompile("(.+)__(.+)_project")
 
 var (
 	action    string
@@ -62,14 +65,18 @@ func main() {
 	}
 	// Calculate the timestamp for nDays ago
 	nDaysAgo := time.Now().AddDate(0, 0, -nDays)
+	projectToEmailFunc := func(resource openstack.OSResourceInterface) string {
+		return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
+	}
 
-	osClient := openstack.NewOSClient().WithWorkers(workers)
+	osClient := openstack.NewOSClient().
+		WithWorkers(workers).
+		WithProjectToEmail(projectToEmailFunc)
 
 	filter := openstack.NewOSResourceFilter(nDaysAgo, includeRe, excludeRe, tagValue, tagged)
 	filterFunc := func(resource openstack.OSResourceInterface) bool {
 		return filter.Run(resource)
 	}
-
 	instances, err := osClient.GetInstances(filterFunc)
 	if err != nil {
 		log.Fatal("Error while getting instances:", err)

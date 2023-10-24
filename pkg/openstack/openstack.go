@@ -1,7 +1,6 @@
 package openstack
 
 import (
-	"regexp"
 	"sync"
 
 	"github.com/alitto/pond"
@@ -16,13 +15,12 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 )
 
-var mailRe = regexp.MustCompile("(.+)__(.+)_project")
-
 type OSClient struct {
 	ProviderClient *gophercloud.ProviderClient
 	ComputeClient  *gophercloud.ServiceClient
 	IdentityClient *gophercloud.ServiceClient
 	workers        int
+	projectToEmail func(OSResourceInterface) string
 	projectsCache  map[string]string
 }
 
@@ -97,7 +95,14 @@ func (osClient *OSClient) WithWorkers(workers int) *OSClient {
 	return osClient
 }
 
-func (osClient *OSClient) GetInstances(filter func(OSResourceInterface) bool) ([]OSResourceInterface, error) {
+func (osClient *OSClient) WithProjectToEmail(projectToEmail func(OSResourceInterface) string) *OSClient {
+	log.Debugf("Setting projectToEmail to: %s", projectToEmail)
+	osClient.projectToEmail = projectToEmail
+	return osClient
+}
+
+func (osClient *OSClient) GetInstances(
+	filter func(OSResourceInterface) bool) ([]OSResourceInterface, error) {
 	osClient, err := osClient.withProjectsCache()
 	if err != nil {
 		return nil, err
@@ -139,7 +144,6 @@ func (osClient *OSClient) GetInstances(filter func(OSResourceInterface) bool) ([
 				log.Errorf("Getting tags for %s: %s", server.Server.ID, errTmp)
 				err = errTmp
 			}
-			mail := mailRe.ReplaceAllString(projectName, `$1@$2`)
 			instance := Instance{
 				osClient:     osClient,
 				Server:       &server.Server,
@@ -149,8 +153,10 @@ func (osClient *OSClient) GetInstances(filter func(OSResourceInterface) bool) ([
 				VmState:      server.VmState,
 				PowerState:   server.PowerState.String(),
 				ProjectName:  projectName,
-				Email:        mail,
 				Tags:         serverTags,
+			}
+			if osClient.projectToEmail != nil {
+				instance.Email = osClient.projectToEmail(&instance)
 			}
 			if filter(&instance) {
 				mu.Lock()
