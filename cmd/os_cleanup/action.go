@@ -73,6 +73,8 @@ func getTableWriter(instances []openstack.OSResourceInterface) table.Writer {
 	return tw
 }
 
+var outFile = os.Stdout
+
 func actionList(instances []openstack.OSResourceInterface, outputCode int) {
 	switch outputCode {
 	case TABLE:
@@ -94,7 +96,7 @@ func actionList(instances []openstack.OSResourceInterface, outputCode int) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		_, err = os.Stdout.Write(jsonData)
+		_, err = outFile.Write(jsonData)
 		if err != nil {
 			log.Fatal(err)
 		}

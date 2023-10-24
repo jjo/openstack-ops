@@ -108,7 +108,8 @@ func (osClient *OSClient) WithProjectToEmail(projectToEmail func(OSResourceInter
 }
 
 func (osClient *OSClient) GetInstances(
-	filter func(OSResourceInterface) bool) ([]OSResourceInterface, error) {
+	filter func(OSResourceInterface) bool,
+) ([]OSResourceInterface, error) {
 	osClient, err := osClient.withProjectsCache()
 	if err != nil {
 		return nil, err

@@ -47,6 +47,10 @@ func parseFlags() {
 	pflag.Parse()
 }
 
+func projectToEmailFunc(resource openstack.OSResourceInterface) string {
+	return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
+}
+
 func main() {
 	parseFlags()
 
@@ -65,9 +69,6 @@ func main() {
 	}
 	// Calculate the timestamp for nDays ago
 	nDaysAgo := time.Now().AddDate(0, 0, -nDays)
-	projectToEmailFunc := func(resource openstack.OSResourceInterface) string {
-		return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
-	}
 
 	var osClient openstack.OSClientInterface
 	osClient = openstack.NewOSClient().
