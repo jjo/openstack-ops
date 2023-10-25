@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -17,7 +19,7 @@ const (
 
 var mailRe = regexp.MustCompile("(.+)__(.+)_project")
 
-var (
+type cliOptions struct {
 	action    string
 	output    string
 	includeRe string
@@ -28,61 +30,85 @@ var (
 	tagValue  string
 	yes       bool
 	workers   int
-)
+}
 
 var log = logger.Log
 
-func parseFlags() {
+func parseFlags() cliOptions {
 	// Parse the command-line arguments
-	pflag.StringVarP(&includeRe, "include-re", "i", "(.+)__(alumno|gmail).*", "regex for instance projects to include")
-	pflag.StringVarP(&excludeRe, "exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
-	pflag.StringVarP(&action, "action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
-	pflag.StringVarP(&output, "output", "o", "table", "output format: table, json, csv, html, md")
-	pflag.IntVarP(&nDays, "days", "d", 60, "instances older than `days`")
-	pflag.BoolVarP(&tagged, "tagged", "t", false, "list only tagged instances")
-	pflag.StringVarP(&tagValue, "tag-value", "", osCleanupTag, "tag value to use")
-	pflag.BoolVarP(&yes, "yes", "", false, "commit dangerous actions, e.g. delete")
-	pflag.StringVarP(&logLevel, "loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
-	pflag.IntVarP(&workers, "workers", "w", workerCount, "number of workers")
+	includeRe := pflag.StringP("include-re", "i", "(.+)__(alumno|gmail).*", "regex for instance projects to include")
+	excludeRe := pflag.StringP("exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
+	action := pflag.StringP("action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
+	output := pflag.StringP("output", "o", "table", "output format: table, json, csv, html, md")
+	nDays := pflag.IntP("days", "d", 60, "instances older than `days`")
+	tagged := pflag.BoolP("tagged", "t", false, "list only tagged instances")
+	tagValue := pflag.StringP("tag-value", "", osCleanupTag, "tag value to use")
+	yes := pflag.BoolP("yes", "", false, "commit dangerous actions, e.g. delete")
+	logLevel := pflag.StringP("loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
+	workers := pflag.IntP("workers", "w", workerCount, "number of workers")
 	pflag.Parse()
+	return cliOptions{
+		action:    *action,
+		output:    *output,
+		includeRe: *includeRe,
+		excludeRe: *excludeRe,
+		nDays:     *nDays,
+		tagged:    *tagged,
+		logLevel:  *logLevel,
+		tagValue:  *tagValue,
+		yes:       *yes,
+		workers:   *workers,
+	}
 }
 
 func projectToEmailFunc(resource openstack.OSResourceInterface) string {
 	return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
 }
 
-func main() {
-	parseFlags()
+var osClient openstack.OSClientInterface
 
-	logger.SetLevel(logLevel)
-	if action == "" {
-		log.Fatal("No action specified with: -a <action>, e.g.: -a list")
+func runMain(opts cliOptions, outFile *os.File) error {
+	_, err := logger.SetLevel(opts.logLevel)
+	if err != nil {
+		return err
+	}
+	if opts.action == "" {
+		return fmt.Errorf("No action specified with: -a <action>, e.g.: -a list")
 	}
 
-	actionCode := codeNum(action, actionsMap)
+	actionCode := codeNum(opts.action, actionsMap)
 	if actionCode == -1 {
-		log.Fatalf("Invalid action: %s", action)
+		return fmt.Errorf("Invalid action: %s", opts.action)
 	}
-	outputCode := codeNum(output, outputMap)
+	outputCode := codeNum(opts.output, outputMap)
 	if outputCode == -1 {
-		log.Fatalf("Invalid output: %s", output)
+		return fmt.Errorf("Invalid output: %s", opts.output)
 	}
 	// Calculate the timestamp for nDays ago
-	nDaysAgo := time.Now().AddDate(0, 0, -nDays)
+	nDaysAgo := time.Now().AddDate(0, 0, -opts.nDays)
 
-	var osClient openstack.OSClientInterface
-	osClient = openstack.NewOSClient().
-		WithWorkers(workers).
-		WithProjectToEmail(projectToEmailFunc)
+	// Ease unittesting (by overriding osClient)
+	if osClient == nil {
+		osClient = openstack.NewOSClient().
+			WithWorkers(opts.workers).
+			WithProjectToEmail(projectToEmailFunc)
+	}
 
-	filter := openstack.NewOSResourceFilter(nDaysAgo, includeRe, excludeRe, tagValue, tagged)
+	filter := openstack.NewOSResourceFilter(nDaysAgo, opts.includeRe, opts.excludeRe, opts.tagValue, opts.tagged)
 	filterFunc := func(resource openstack.OSResourceInterface) bool {
 		return filter.Run(resource)
 	}
 	instances, err := osClient.GetInstances(filterFunc)
 	if err != nil {
-		log.Fatal("Error while getting instances:", err)
+		log.Error("Error while getting instances:", err)
 	}
 
-	actionRun(osClient, instances, actionCode, outputCode)
+	return actionRun(osClient, instances, actionCode, outputCode, outFile, &opts)
+}
+func main() {
+	cliOptions := parseFlags()
+	err := runMain(cliOptions, os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

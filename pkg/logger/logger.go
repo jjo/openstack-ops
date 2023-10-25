@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 
 	logging "github.com/op/go-logging"
@@ -21,13 +22,13 @@ func setupLogging(module string, out *os.File, logLevel string) {
 	logging.SetBackend(backendFormatter)
 }
 
-func SetLevel(logLevel string) *logging.Logger {
+func SetLevel(logLevel string) (*logging.Logger, error) {
 	level, err := logging.LogLevel(logLevel)
 	if err != nil {
-		Log.Fatalf("Invalid log level: %s", logLevel)
+		return nil, fmt.Errorf("Invalid log level: %s", logLevel)
 	}
 	logging.SetLevel(level, Module)
-	return Log
+	return Log, nil
 }
 
 func init() {

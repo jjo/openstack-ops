@@ -13,6 +13,9 @@ RUN=./$(TARGET)	$(ARGS) $(X)
 
 all: build
 
+test:
+	go test --count=1 -race ./...
+
 build: $(TARGET)
 
 output: out/list.md out/list.json out/list.table out/emails.txt

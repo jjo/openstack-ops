@@ -53,13 +53,14 @@ func codeNum(str string, strMap map[string]int) int {
 	return ret
 }
 
-func actionRun(osClient openstack.OSClientInterface, instances []openstack.OSResourceInterface, actionCode, outputCode int) {
+func actionRun(osClient openstack.OSClientInterface, instances []openstack.OSResourceInterface, actionCode, outputCode int, outFile *os.File, opts *cliOptions) error {
 	switch actionCode {
 	case LIST:
-		actionList(instances, outputCode)
+		return actionList(instances, outputCode, outFile)
 	case STOP, START, DELETE, TAG, UNTAG:
-		actionPerResource(instances, actionCode)
+		return actionPerResource(instances, actionCode, opts)
 	}
+	return fmt.Errorf("Invalid action code: %d", actionCode)
 }
 
 func getTableWriter(instances []openstack.OSResourceInterface) table.Writer {
@@ -73,9 +74,7 @@ func getTableWriter(instances []openstack.OSResourceInterface) table.Writer {
 	return tw
 }
 
-var outFile = os.Stdout
-
-func actionList(instances []openstack.OSResourceInterface, outputCode int) {
+func actionList(instances []openstack.OSResourceInterface, outputCode int, outFile *os.File) error {
 	switch outputCode {
 	case TABLE:
 		tw := getTableWriter(instances)
@@ -94,13 +93,14 @@ func actionList(instances []openstack.OSResourceInterface, outputCode int) {
 		// Write the JSON instances to os.Stdout
 		jsonData, err := json.MarshalIndent(instances, "", "  ")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		_, err = outFile.Write(jsonData)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func yesnoStr(yes bool, msg string) string {
@@ -108,44 +108,45 @@ func yesnoStr(yes bool, msg string) string {
 	return fmt.Sprintf("%s%s", yn, msg)
 }
 
-func actionPerResource(resources []openstack.OSResourceInterface, actionCode int) {
+func actionPerResource(resources []openstack.OSResourceInterface, actionCode int, opts *cliOptions) error {
 	var err error
 	var msg string
 	for _, resource := range resources {
 		switch actionCode {
 		case STOP:
 			msg = "Stopping server"
-			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
-			if yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
+			if opts.yes {
 				err = resource.Stop()
 			}
 		case START:
 			msg = "Starting server"
-			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
-			if yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
+			if opts.yes {
 				err = resource.Start()
 			}
 		case DELETE:
 			msg = "Deleting server"
-			log.Infof("%s: %s\n", yesnoStr(yes, msg), resource.String())
-			if yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
+			if opts.yes {
 				err = resource.Delete()
 			}
 		case TAG:
 			msg = "Tagging server"
-			log.Infof("%s: %s <- %s\n", yesnoStr(yes, msg), resource.String(), tagValue)
-			if yes {
-				err = resource.Tag(tagValue)
+			log.Infof("%s: %s <- %s\n", yesnoStr(opts.yes, msg), resource.String(), opts.tagValue)
+			if opts.yes {
+				err = resource.Tag(opts.tagValue)
 			}
 		case UNTAG:
 			msg = "Untagging server"
-			log.Infof("%s: %s <- %s\n", yesnoStr(yes, msg), resource.String(), tagValue)
-			if yes {
-				err = resource.Untag(tagValue)
+			log.Infof("%s: %s <- %s\n", yesnoStr(opts.yes, msg), resource.String(), opts.tagValue)
+			if opts.yes {
+				err = resource.Untag(opts.tagValue)
 			}
 		}
 		if err != nil {
 			log.Errorf("Error %s %s: %s\n", msg, resource.String(), err)
 		}
 	}
+	return err
 }
