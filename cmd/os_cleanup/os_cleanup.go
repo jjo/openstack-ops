@@ -105,6 +105,7 @@ func runMain(opts cliOptions, outFile *os.File) error {
 
 	return actionRun(osClient, instances, actionCode, outputCode, outFile, &opts)
 }
+
 func main() {
 	cliOptions := parseFlags()
 	err := runMain(cliOptions, os.Stdout)
