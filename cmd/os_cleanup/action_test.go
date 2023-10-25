@@ -208,13 +208,13 @@ func Test_actionPerResource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			opts := cliOptions{}
 			// Should show function (Delete, Stop, etc) called once
-			opts.yes = true
+			opts.doit = true
 			actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
 			for _, m := range tt.args.resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)
 			}
 			// Should not increase called count (doit=false)
-			opts.yes = false
+			opts.doit = false
 			actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
 			for _, m := range tt.args.resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)

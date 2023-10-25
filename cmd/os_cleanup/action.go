@@ -115,32 +115,32 @@ func actionPerResource(resources []openstack.OSResourceInterface, actionCode int
 		switch actionCode {
 		case STOP:
 			msg = "Stopping server"
-			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
-			if opts.yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+			if opts.doit {
 				err = resource.Stop()
 			}
 		case START:
 			msg = "Starting server"
-			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
-			if opts.yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+			if opts.doit {
 				err = resource.Start()
 			}
 		case DELETE:
 			msg = "Deleting server"
-			log.Infof("%s: %s\n", yesnoStr(opts.yes, msg), resource.String())
-			if opts.yes {
+			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+			if opts.doit {
 				err = resource.Delete()
 			}
 		case TAG:
 			msg = "Tagging server"
-			log.Infof("%s: %s <- %s\n", yesnoStr(opts.yes, msg), resource.String(), opts.tagValue)
-			if opts.yes {
+			log.Infof("%s: %s <- %s\n", yesnoStr(opts.doit, msg), resource.String(), opts.tagValue)
+			if opts.doit {
 				err = resource.Tag(opts.tagValue)
 			}
 		case UNTAG:
 			msg = "Untagging server"
-			log.Infof("%s: %s <- %s\n", yesnoStr(opts.yes, msg), resource.String(), opts.tagValue)
-			if opts.yes {
+			log.Infof("%s: %s <- %s\n", yesnoStr(opts.doit, msg), resource.String(), opts.tagValue)
+			if opts.doit {
 				err = resource.Untag(opts.tagValue)
 			}
 		}

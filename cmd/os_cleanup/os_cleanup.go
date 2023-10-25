@@ -28,7 +28,7 @@ type cliOptions struct {
 	tagged    bool
 	logLevel  string
 	tagValue  string
-	yes       bool
+	doit      bool
 	workers   int
 }
 
@@ -43,7 +43,7 @@ func parseFlags() cliOptions {
 	nDays := pflag.IntP("days", "d", 60, "instances older than `days`")
 	tagged := pflag.BoolP("tagged", "t", false, "list only tagged instances")
 	tagValue := pflag.StringP("tag-value", "", osCleanupTag, "tag value to use")
-	yes := pflag.BoolP("yes", "", false, "commit dangerous actions, e.g. delete")
+	doit := pflag.BoolP("yes", "", false, "commit dangerous actions, e.g. delete")
 	logLevel := pflag.StringP("loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
 	workers := pflag.IntP("workers", "w", workerCount, "number of workers")
 	pflag.Parse()
@@ -56,7 +56,7 @@ func parseFlags() cliOptions {
 		tagged:    *tagged,
 		logLevel:  *logLevel,
 		tagValue:  *tagValue,
-		yes:       *yes,
+		doit:      *doit,
 		workers:   *workers,
 	}
 }
