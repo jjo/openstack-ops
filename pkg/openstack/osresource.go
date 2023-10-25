@@ -11,6 +11,7 @@ import (
 )
 
 type OSResourceInterface interface {
+	GetData() (string, string, string)
 	Stop() error
 	Start() error
 	Delete() error
@@ -44,6 +45,10 @@ type ServerWithExt struct {
 
 func GetRowHeader([]OSResourceInterface) []interface{} {
 	return []interface{}{"Instance_Name", "Instance_ID", "Created", "VmState", "PowerState", "Project", "Email", "Tags"}
+}
+
+func (instance *Instance) GetData() (string, string, string) {
+	return instance.InstanceID, instance.InstanceName, instance.ProjectName
 }
 
 func (instance *Instance) GetRow() []interface{} {
