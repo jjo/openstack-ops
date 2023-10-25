@@ -41,10 +41,18 @@ func Test_codeNum(t *testing.T) {
 		{
 			"codeNum: stop",
 			args{
-				"delete",
+				"stop",
 				actionsMap,
 			},
-			DELETE,
+			STOP,
+		},
+		{
+			"codeNum: start",
+			args{
+				"start",
+				actionsMap,
+			},
+			START,
 		},
 		{
 			"codeNum: table",
@@ -117,7 +125,7 @@ func Test_actionRun(t *testing.T) {
 				LIST,
 				JSON,
 			},
-			[]openstack.OSResourceInterface{mockInstances[0]},
+			[]openstack.OSResourceInterface{m1},
 		},
 	}
 
