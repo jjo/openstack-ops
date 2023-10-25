@@ -99,6 +99,7 @@ func newMockOSResource(id, name, project string, nDaysAgo int, tags []string) *m
 		ID:      id,
 		Name:    name,
 		Project: project,
+		Tags:    tags,
 		Created: time.Now().AddDate(0, 0, -nDaysAgo),
 	}
 }
@@ -106,10 +107,9 @@ func newMockOSResource(id, name, project string, nDaysAgo int, tags []string) *m
 var (
 	nDays1        = 30
 	nDays2        = 60
-	mockInstances = []openstack.OSResourceInterface{
-		newMockOSResource("1", "one", "foo__bar.com_project", nDays1, []string{"tag1"}),
-		newMockOSResource("2", "two", "foo__bar.com_project", nDays2, []string{"tag2"}),
-	}
+	m1            = newMockOSResource("1", "one", "foo__bar.com_project", nDays1, []string{"tag1"})
+	m2            = newMockOSResource("2", "two", "foo__bar.com_project", nDays2, []string{"tag2"})
+	mockInstances = []openstack.OSResourceInterface{m1, m2}
 )
 
 func (m *mockOSclient) GetInstances(filter func(r openstack.OSResourceInterface) bool) ([]openstack.OSResourceInterface, error) {
@@ -138,10 +138,10 @@ func Test_runMain(t *testing.T) {
 		opts cliOptions
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantLength int
-		wantErr    bool
+		name          string
+		args          args
+		wantInstances []openstack.OSResourceInterface
+		wantErr       bool
 	}{
 		{
 			"runMain: bad logLevel",
@@ -152,7 +152,7 @@ func Test_runMain(t *testing.T) {
 					logLevel: "foobar",
 				},
 			},
-			0,
+			[]openstack.OSResourceInterface{},
 			true,
 		},
 		{
@@ -164,7 +164,7 @@ func Test_runMain(t *testing.T) {
 					logLevel: "debug",
 				},
 			},
-			0,
+			[]openstack.OSResourceInterface{},
 			true,
 		},
 		{
@@ -176,7 +176,7 @@ func Test_runMain(t *testing.T) {
 					logLevel: "debug",
 				},
 			},
-			0,
+			[]openstack.OSResourceInterface{},
 			true,
 		},
 		{
@@ -195,7 +195,7 @@ func Test_runMain(t *testing.T) {
 					workers:   10,
 				},
 			},
-			len(mockInstances),
+			mockInstances,
 			false,
 		},
 		{
@@ -214,7 +214,7 @@ func Test_runMain(t *testing.T) {
 					workers:   10,
 				},
 			},
-			len(mockInstances),
+			mockInstances,
 			false,
 		},
 		{
@@ -233,7 +233,102 @@ func Test_runMain(t *testing.T) {
 					workers:   10,
 				},
 			},
-			1,
+			[]openstack.OSResourceInterface{m2},
+			false,
+		},
+		{
+			"runMain: list tagged (one instance)",
+			args{
+				cliOptions{
+					action:    "list",
+					output:    "json",
+					includeRe: "(.+)__.*",
+					excludeRe: "",
+					nDays:     0,
+					tagValue:  "tag1",
+					tagged:    true,
+					logLevel:  "info",
+					yes:       false,
+					workers:   10,
+				},
+			},
+			[]openstack.OSResourceInterface{m1},
+			false,
+		},
+		{
+			"runMain: list tagged (no instance)",
+			args{
+				cliOptions{
+					action:    "list",
+					output:    "json",
+					includeRe: "(.+)__.*",
+					excludeRe: "",
+					nDays:     0,
+					tagValue:  "tagFooBar",
+					tagged:    true,
+					logLevel:  "info",
+					yes:       false,
+					workers:   10,
+				},
+			},
+			[]openstack.OSResourceInterface{},
+			false,
+		},
+		{
+			"runMain: list includeRe (one instance)",
+			args{
+				cliOptions{
+					action:    "list",
+					output:    "json",
+					includeRe: "one",
+					excludeRe: "",
+					nDays:     0,
+					tagValue:  "",
+					tagged:    false,
+					logLevel:  "info",
+					yes:       false,
+					workers:   10,
+				},
+			},
+			[]openstack.OSResourceInterface{m1},
+			false,
+		},
+		{
+			"runMain: list includeRe (one instance)",
+			args{
+				cliOptions{
+					action:    "list",
+					output:    "json",
+					includeRe: "foo__bar",
+					excludeRe: "two",
+					nDays:     0,
+					tagValue:  "",
+					tagged:    false,
+					logLevel:  "info",
+					yes:       false,
+					workers:   10,
+				},
+			},
+			[]openstack.OSResourceInterface{m1},
+			false,
+		},
+		{
+			"runMain: list exclude (no instance)",
+			args{
+				cliOptions{
+					action:    "list",
+					output:    "json",
+					includeRe: "FOOone",
+					excludeRe: "",
+					nDays:     0,
+					tagValue:  "",
+					tagged:    false,
+					logLevel:  "info",
+					yes:       false,
+					workers:   10,
+				},
+			},
+			[]openstack.OSResourceInterface{},
 			false,
 		},
 	}
@@ -259,7 +354,13 @@ func Test_runMain(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			require.Equal(t, tt.wantLength, len(result), tt.name)
+			wantJson, _ := json.Marshal(tt.wantInstances)
+			require.JSONEq(
+				t,
+				string(wantJson),
+				string(content),
+				tt.name,
+			)
 		})
 	}
 }
