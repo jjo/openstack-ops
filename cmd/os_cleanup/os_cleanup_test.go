@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"syscall"
 	"testing"
 	"time"
 
@@ -337,11 +335,11 @@ func Test_runMain(t *testing.T) {
 		tearDownTest := setupTest(t)
 		defer tearDownTest(t)
 
-		outFile, err := ioutil.TempFile("", "testout")
+		outFile, err := os.CreateTemp("", "testout")
 		if err != nil {
 			t.Error(err)
 		}
-		defer syscall.Unlink(outFile.Name())
+		defer os.Remove(outFile.Name())
 		t.Run(tt.name, func(t *testing.T) {
 			err := runMain(tt.args.opts, outFile)
 			if tt.wantErr {

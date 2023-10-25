@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -135,20 +133,23 @@ func Test_actionRun(t *testing.T) {
 
 		opts := cliOptions{}
 
-		outFile, err := ioutil.TempFile("", "testout")
+		outFile, err := os.CreateTemp("", "testout")
 		if err != nil {
 			t.Error(err)
 		}
-		defer syscall.Unlink(outFile.Name())
+		defer os.Remove(outFile.Name())
 		tt.args.instances, err = tt.args.osClient.GetInstances(tt.args.filter)
 		if err != nil {
 			t.Error(err)
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			actionRun(tt.args.osClient, tt.args.instances, tt.args.actionCode, tt.args.outputCode, outFile, &opts)
+			err := actionRun(tt.args.osClient, tt.args.instances, tt.args.actionCode, tt.args.outputCode, outFile, &opts)
+			if err != nil {
+				t.Error(err)
+			}
 			content, _ := os.ReadFile(outFile.Name())
 			var result []interface{}
-			err := json.Unmarshal(content, &result)
+			err = json.Unmarshal(content, &result)
 			if err != nil {
 				t.Error(err)
 			}
@@ -209,13 +210,19 @@ func Test_actionPerResource(t *testing.T) {
 			opts := cliOptions{}
 			// Should show function (Delete, Stop, etc) called once
 			opts.doit = true
-			actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			err := actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			if err != nil {
+				t.Error(err)
+			}
 			for _, m := range tt.args.resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)
 			}
 			// Should not increase called count (doit=false)
 			opts.doit = false
-			actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			err = actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			if err != nil {
+				t.Error(err)
+			}
 			for _, m := range tt.args.resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)
 			}
