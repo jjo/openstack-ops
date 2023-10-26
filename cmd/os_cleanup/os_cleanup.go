@@ -80,6 +80,7 @@ func runMain(opts cliOptions, outFile *os.File) error {
 	if actionCode == -1 {
 		return fmt.Errorf("Invalid action: %s", opts.action)
 	}
+
 	outputCode := codeNum(opts.output, outputMap)
 	if outputCode == -1 {
 		return fmt.Errorf("Invalid output: %s", opts.output)
@@ -103,11 +104,12 @@ func runMain(opts cliOptions, outFile *os.File) error {
 		log.Error("Error while getting instances:", err)
 	}
 
-	return actionRun(osClient, instances, actionCode, outputCode, outFile, &opts)
+	return actionRun(instances, actionCode, outputCode, outFile, &opts)
 }
 
 func main() {
 	cliOptions := parseFlags()
+
 	err := runMain(cliOptions, os.Stdout)
 	if err != nil {
 		log.Fatal(err)

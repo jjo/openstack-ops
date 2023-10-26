@@ -65,12 +65,12 @@ func (m *mockOSResource) Start() error {
 	return nil
 }
 
-func (m *mockOSResource) Tag(s string) error {
+func (m *mockOSResource) Tag(_ string) error {
 	m.calledTag++
 	return nil
 }
 
-func (m *mockOSResource) Untag(s string) error {
+func (m *mockOSResource) Untag(_ string) error {
 	m.calledUntag++
 	return nil
 }
@@ -110,11 +110,16 @@ var (
 	mockInstances = []openstack.OSResourceInterface{m1, m2}
 )
 
-func (m *mockOSclient) GetInstances(filter func(r openstack.OSResourceInterface) bool) ([]openstack.OSResourceInterface, error) {
+func (m *mockOSclient) GetInstances(
+	filter func(r openstack.OSResourceInterface) bool) (
+	[]openstack.OSResourceInterface, error,
+) {
 	instances := make([]openstack.OSResourceInterface, 0)
+
 	for _, i := range mockInstances {
 		instance := i.(*mockOSResource)
 		instance.osClient = m
+
 		if m.projectToEmail != nil {
 			instance.Email = m.projectToEmail(instance)
 		}
@@ -125,7 +130,7 @@ func (m *mockOSclient) GetInstances(filter func(r openstack.OSResourceInterface)
 	return instances, nil
 }
 
-func setupTest(t *testing.T) func(t *testing.T) {
+func setupTest(_ *testing.T) func(t *testing.T) {
 	osClient = &mockOSclient{}
 	return func(t *testing.T) {
 	}
@@ -331,6 +336,7 @@ func Test_runMain(t *testing.T) {
 		},
 	}
 	osClient = &mockOSclient{}
+
 	for _, tt := range tests {
 		tearDownTest := setupTest(t)
 		defer tearDownTest(t)
@@ -339,7 +345,9 @@ func Test_runMain(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
 		defer os.Remove(outFile.Name())
+
 		t.Run(tt.name, func(t *testing.T) {
 			err := runMain(tt.args.opts, outFile)
 			if tt.wantErr {
@@ -352,10 +360,10 @@ func Test_runMain(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			wantJson, _ := json.Marshal(tt.wantInstances)
+			wantJSON, _ := json.Marshal(tt.wantInstances)
 			require.JSONEq(
 				t,
-				string(wantJson),
+				string(wantJSON),
 				string(content),
 				tt.name,
 			)

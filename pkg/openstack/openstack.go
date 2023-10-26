@@ -50,6 +50,7 @@ func NewOSClient() *OSClient {
 
 	// NB: v2.26 needed to enable Tags interface
 	computeClient.Microversion = "2.26"
+
 	if err != nil {
 		log.Fatal("Failed to create Compute service client:", err)
 	}
@@ -73,6 +74,7 @@ func (osClient *OSClient) withProjectsCache() (*OSClient, error) {
 	if osClient.projectsCache != nil {
 		return osClient, nil
 	}
+
 	osClient.projectsCache = make(map[string]string)
 	projectPager := projects.List(osClient.IdentityClient, projects.ListOpts{})
 	// Retrieve and store project information
@@ -90,6 +92,7 @@ func (osClient *OSClient) withProjectsCache() (*OSClient, error) {
 		log.Fatalf("Failed to paginate projects: %s", err)
 		return nil, err
 	}
+
 	log.Debugf("Created projectsCache: Loaded %d projects", len(osClient.projectsCache))
 
 	return osClient, nil
@@ -138,11 +141,13 @@ func (osClient *OSClient) GetInstances(
 
 	instances := make([]OSResourceInterface, 0)
 	// Iterate over the paginated results and filter instances older than one month
-	mu := &sync.Mutex{}
+	mutex := &sync.Mutex{}
 	pool := pond.New(osClient.workers, 0, pond.MinWorkers(osClient.workers))
+
 	for _, serverIterator := range allServers {
 		server := new(ServerWithExt)
 		*server = serverIterator
+
 		pool.Submit(func() {
 			projectName := osClient.projectsCache[server.Server.TenantID]
 			resp := tags.List(osClient.ComputeClient, server.Server.ID)
@@ -157,7 +162,7 @@ func (osClient *OSClient) GetInstances(
 				InstanceName: server.Server.Name,
 				InstanceID:   server.Server.ID,
 				Created:      server.Server.Created,
-				VmState:      server.VmState,
+				VMState:      server.VmState,
 				PowerState:   server.PowerState.String(),
 				ProjectName:  projectName,
 				Tags:         serverTags,
@@ -166,9 +171,9 @@ func (osClient *OSClient) GetInstances(
 				instance.Email = osClient.projectToEmail(&instance)
 			}
 			if filter(&instance) {
-				mu.Lock()
+				mutex.Lock()
 				instances = append(instances, &instance)
-				mu.Unlock()
+				mutex.Unlock()
 			}
 		})
 	}

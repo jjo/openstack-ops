@@ -31,6 +31,7 @@ func (filter *OSResourceFilter) WithIncRe(re string) *OSResourceFilter {
 	if re != "" {
 		filter.incRe = regexp.MustCompile(re)
 	}
+
 	return filter
 }
 
@@ -38,6 +39,7 @@ func (filter *OSResourceFilter) WithExcRe(re string) *OSResourceFilter {
 	if re != "" {
 		filter.excRe = regexp.MustCompile(re)
 	}
+
 	return filter
 }
 
@@ -51,6 +53,7 @@ func (filter *OSResourceFilter) WithTag(tag string) *OSResourceFilter {
 	if tag == "" {
 		filter.tagMatch = false
 	}
+
 	return filter
 }
 
@@ -65,12 +68,12 @@ func NewOSResourceFilter(t time.Time, incStr, excStr, tag string, tagMatch bool)
 	return filter
 }
 
-func (f *OSResourceFilter) Run(r OSResourceInterface) bool {
+func (filter *OSResourceFilter) Run(r OSResourceInterface) bool {
 	strAll := r.StringAll()
-	ret := r.CreatedBefore(f.createdBefore) &&
-		(f.incRe == nil || f.incRe.MatchString(strAll)) &&
-		(f.excRe == nil || !f.excRe.MatchString(strAll)) &&
-		(!f.tagMatch || slices.Contains(r.GetTags(), f.tag))
-	log.Debugf("filter.Run(): strAll -> %v, ret: %v", strAll, f, ret)
+	ret := r.CreatedBefore(filter.createdBefore) &&
+		(filter.incRe == nil || filter.incRe.MatchString(strAll)) &&
+		(filter.excRe == nil || !filter.excRe.MatchString(strAll)) &&
+		(!filter.tagMatch || slices.Contains(r.GetTags(), filter.tag))
+	log.Debugf("filter.Run(): strAll -> %v, ret: %v", strAll, filter, ret)
 	return ret
 }

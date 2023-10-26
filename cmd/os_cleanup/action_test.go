@@ -15,6 +15,7 @@ func Test_codeNum(t *testing.T) {
 		str    string
 		strMap map[string]int
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -22,53 +23,36 @@ func Test_codeNum(t *testing.T) {
 	}{
 		{
 			"codeNum: list",
-			args{
-				"list",
-				actionsMap,
-			},
+			args{"list", actionsMap},
 			LIST,
 		},
 		{
 			"codeNum: stop",
-			args{
-				"delete",
-				actionsMap,
-			},
+			args{"delete", actionsMap},
 			DELETE,
 		},
 		{
 			"codeNum: stop",
-			args{
-				"stop",
-				actionsMap,
-			},
+			args{"stop", actionsMap},
 			STOP,
 		},
 		{
 			"codeNum: start",
-			args{
-				"start",
-				actionsMap,
-			},
+			args{"start", actionsMap},
 			START,
 		},
 		{
 			"codeNum: table",
-			args{
-				"table",
-				outputMap,
-			},
+			args{"table", outputMap},
 			TABLE,
 		},
 		{
 			"codeNum: markdown",
-			args{
-				"md",
-				outputMap,
-			},
+			args{"md", outputMap},
 			MARKDOWN,
 		},
 	}
+
 	for _, tt := range tests {
 		tearDownTest := setupTest(t)
 		defer tearDownTest(t)
@@ -87,6 +71,7 @@ func Test_actionRun(t *testing.T) {
 		actionCode int
 		outputCode int
 	}
+
 	tests := []struct {
 		name         string
 		args         args
@@ -137,13 +122,16 @@ func Test_actionRun(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
 		defer os.Remove(outFile.Name())
+
 		tt.args.instances, err = tt.args.osClient.GetInstances(tt.args.filter)
 		if err != nil {
 			t.Error(err)
 		}
+
 		t.Run(tt.name, func(t *testing.T) {
-			err := actionRun(tt.args.osClient, tt.args.instances, tt.args.actionCode, tt.args.outputCode, outFile, &opts)
+			err := actionRun(tt.args.instances, tt.args.actionCode, tt.args.outputCode, outFile, &opts)
 			if err != nil {
 				t.Error(err)
 			}
@@ -171,6 +159,7 @@ func Test_actionPerResource(t *testing.T) {
 		resources  []openstack.OSResourceInterface
 		actionCode int
 	}
+
 	tests := []struct {
 		name       string
 		args       args
@@ -202,6 +191,7 @@ func Test_actionPerResource(t *testing.T) {
 			func(m *mockOSResource) int { return m.calledUntag },
 		},
 	}
+
 	for _, tt := range tests {
 		tearDownTest := setupTest(t)
 		defer tearDownTest(t)

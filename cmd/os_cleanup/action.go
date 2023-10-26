@@ -53,7 +53,10 @@ func codeNum(str string, strMap map[string]int) int {
 	return ret
 }
 
-func actionRun(osClient openstack.OSClientInterface, instances []openstack.OSResourceInterface, actionCode, outputCode int, outFile *os.File, opts *cliOptions) error {
+func actionRun(
+	instances []openstack.OSResourceInterface, actionCode, outputCode int,
+	outFile *os.File, opts *cliOptions,
+) error {
 	switch actionCode {
 	case LIST:
 		return actionList(instances, outputCode, outFile)
@@ -66,6 +69,7 @@ func actionRun(osClient openstack.OSClientInterface, instances []openstack.OSRes
 func getTableWriter(instances []openstack.OSResourceInterface) table.Writer {
 	tw := table.NewWriter()
 	tw.AppendHeader(openstack.GetRowHeader(instances))
+
 	for _, resource := range instances {
 		tw.AppendRow(resource.GetRow())
 	}
@@ -79,22 +83,23 @@ func actionList(instances []openstack.OSResourceInterface, outputCode int, outFi
 	case TABLE:
 		tw := getTableWriter(instances)
 		tw.SetStyle(table.StyleLight)
-		fmt.Println(tw.Render())
+		fmt.Fprint(outFile, tw.Render())
 	case CSV:
 		tw := getTableWriter(instances)
-		fmt.Println(tw.RenderCSV())
+		fmt.Fprint(outFile, tw.RenderCSV())
 	case HTML:
 		tw := getTableWriter(instances)
-		fmt.Println(tw.RenderHTML())
+		fmt.Fprint(outFile, tw.RenderHTML())
 	case MARKDOWN:
 		tw := getTableWriter(instances)
-		fmt.Println(tw.RenderMarkdown())
+		fmt.Fprint(outFile, tw.RenderMarkdown())
 	case JSON:
 		// Write the JSON instances to os.Stdout
 		jsonData, err := json.MarshalIndent(instances, "", "  ")
 		if err != nil {
 			return err
 		}
+
 		_, err = outFile.Write(jsonData)
 		if err != nil {
 			return err
@@ -111,39 +116,46 @@ func yesnoStr(yes bool, msg string) string {
 func actionPerResource(resources []openstack.OSResourceInterface, actionCode int, opts *cliOptions) error {
 	var err error
 	var msg string
+
 	for _, resource := range resources {
 		switch actionCode {
 		case STOP:
 			msg = "Stopping server"
 			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+
 			if opts.doit {
 				err = resource.Stop()
 			}
 		case START:
 			msg = "Starting server"
 			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+
 			if opts.doit {
 				err = resource.Start()
 			}
 		case DELETE:
 			msg = "Deleting server"
 			log.Infof("%s: %s\n", yesnoStr(opts.doit, msg), resource.String())
+
 			if opts.doit {
 				err = resource.Delete()
 			}
 		case TAG:
 			msg = "Tagging server"
 			log.Infof("%s: %s <- %s\n", yesnoStr(opts.doit, msg), resource.String(), opts.tagValue)
+
 			if opts.doit {
 				err = resource.Tag(opts.tagValue)
 			}
 		case UNTAG:
 			msg = "Untagging server"
 			log.Infof("%s: %s <- %s\n", yesnoStr(opts.doit, msg), resource.String(), opts.tagValue)
+
 			if opts.doit {
 				err = resource.Untag(opts.tagValue)
 			}
 		}
+
 		if err != nil {
 			log.Errorf("Error %s %s: %s\n", msg, resource.String(), err)
 		}

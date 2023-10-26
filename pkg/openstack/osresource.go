@@ -33,7 +33,7 @@ type Instance struct {
 	Created      time.Time `json:"created"`
 	ProjectName  string    `json:"project"`
 	Email        string    `json:"email"`
-	VmState      string    `json:"vmstate"`
+	VMState      string    `json:"vmstate"`
 	PowerState   string    `json:"powerstate"`
 	Tags         []string  `json:"tags"`
 }
@@ -44,7 +44,7 @@ type ServerWithExt struct {
 }
 
 func GetRowHeader([]OSResourceInterface) []interface{} {
-	return []interface{}{"Instance_Name", "Instance_ID", "Created", "VmState", "PowerState", "Project", "Email", "Tags"}
+	return []interface{}{"Instance_Name", "Instance_ID", "Created", "VMState", "PowerState", "Project", "Email", "Tags"}
 }
 
 func (instance *Instance) GetData() (string, string, string) {
@@ -52,7 +52,16 @@ func (instance *Instance) GetData() (string, string, string) {
 }
 
 func (instance *Instance) GetRow() []interface{} {
-	return []interface{}{instance.InstanceName, instance.InstanceID, instance.Created, instance.VmState, instance.PowerState, instance.ProjectName, instance.Email, instance.Tags}
+	return []interface{}{
+		instance.InstanceName,
+		instance.InstanceID,
+		instance.Created,
+		instance.VMState,
+		instance.PowerState,
+		instance.ProjectName,
+		instance.Email,
+		instance.Tags,
+	}
 }
 
 func (instance *Instance) Delete() error {
@@ -73,6 +82,7 @@ func (instance *Instance) Tag(str string) error {
 
 func (instance *Instance) Untag(str string) error {
 	resp := tags.Delete(instance.osClient.ComputeClient, instance.InstanceID, str)
+
 	err := resp.ExtractErr()
 	if err != nil && resp.StatusCode == 404 {
 		err = nil
@@ -85,7 +95,8 @@ func (instance *Instance) CreatedBefore(t time.Time) bool {
 }
 
 func (instance *Instance) String() string {
-	return fmt.Sprintf("Kind: Server Name: %s ID: %s Project: %s", instance.InstanceName, instance.InstanceID, instance.ProjectName)
+	return fmt.Sprintf("Kind: Server Name: %s ID: %s Project: %s",
+		instance.InstanceName, instance.InstanceID, instance.ProjectName)
 }
 
 func (instance *Instance) StringAll() string {
