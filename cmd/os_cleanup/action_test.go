@@ -16,6 +16,8 @@ func Test_codeNum(t *testing.T) {
 		strMap map[string]int
 	}
 
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		args args
@@ -54,9 +56,6 @@ func Test_codeNum(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tearDownTest := setupTest(t)
-		defer tearDownTest(t)
-
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, codeNum(tt.args.str, tt.args.strMap), tt.name)
 		})
@@ -71,6 +70,8 @@ func Test_actionRun(t *testing.T) {
 		actionCode int
 		outputCode int
 	}
+
+	t.Parallel()
 
 	tests := []struct {
 		name         string
@@ -159,6 +160,8 @@ func Test_actionPerResource(t *testing.T) {
 		resources  []openstack.OSResourceInterface
 		actionCode int
 	}
+
+	//t.Parallel()
 
 	tests := []struct {
 		name       string

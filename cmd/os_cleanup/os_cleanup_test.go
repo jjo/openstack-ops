@@ -140,6 +140,7 @@ func Test_runMain(t *testing.T) {
 	type args struct {
 		opts cliOptions
 	}
+
 	tests := []struct {
 		name          string
 		args          args
