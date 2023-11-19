@@ -9,7 +9,7 @@ import (
 	"github.com/jjo/openstack-ops/pkg/logger"
 	"github.com/jjo/openstack-ops/pkg/openstack"
 
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -33,33 +33,7 @@ type cliOptions struct {
 }
 
 var log = logger.Log
-
-func parseFlags() cliOptions {
-	// Parse the command-line arguments
-	includeRe := pflag.StringP("include-re", "i", "(.+)__(alumno|gmail).*", "regex for instance projects to include")
-	excludeRe := pflag.StringP("exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
-	action := pflag.StringP("action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
-	output := pflag.StringP("output", "o", "table", "output format: table, json, csv, html, md")
-	nDays := pflag.IntP("days", "d", 60, "instances older than `days`")
-	tagged := pflag.BoolP("tagged", "t", false, "list only tagged instances")
-	tagValue := pflag.StringP("tag-value", "", osCleanupTag, "tag value to use")
-	doit := pflag.BoolP("yes", "", false, "commit dangerous actions, e.g. delete")
-	logLevel := pflag.StringP("loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
-	workers := pflag.IntP("workers", "w", workerCount, "number of workers")
-	pflag.Parse()
-	return cliOptions{
-		action:    *action,
-		output:    *output,
-		includeRe: *includeRe,
-		excludeRe: *excludeRe,
-		nDays:     *nDays,
-		tagged:    *tagged,
-		logLevel:  *logLevel,
-		tagValue:  *tagValue,
-		doit:      *doit,
-		workers:   *workers,
-	}
-}
+var c cliOptions
 
 func projectToEmailFunc(resource openstack.OSResourceInterface) string {
 	return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
@@ -107,11 +81,38 @@ func runMain(opts cliOptions, outFile *os.File) error {
 	return actionRun(instances, actionCode, outputCode, outFile, &opts)
 }
 
-func main() {
-	cliOptions := parseFlags()
+func root(cmd *cobra.Command, args []string) error {
+	err := runMain(c, os.Stdout)
+	return err
+}
+func NewRootCommand() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "os_cleanup",
+		Short: "Cleanup unused openstack resources",
+		RunE:  root,
+	}
+	pflags := rootCmd.PersistentFlags()
 
-	err := runMain(cliOptions, os.Stdout)
-	if err != nil {
+	pflags.StringVarP(&c.includeRe, "include-re", "i", "(.+)__(alumno|gmail).*", "regex for instance projects to include")
+	pflags.StringVarP(&c.excludeRe, "exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
+
+	pflags.StringVarP(&c.action, "action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
+	rootCmd.MarkPersistentFlagRequired("action")
+
+	pflags.StringVarP(&c.output, "output", "o", "table", "output format: table, json, csv, html, md")
+	pflags.IntVarP(&c.nDays, "days", "d", 60, "instances older than `days`")
+
+	pflags.BoolVarP(&c.tagged, "tagged", "t", false, "list only tagged instances")
+	pflags.StringVarP(&c.tagValue, "tag-value", "", osCleanupTag, "tag value to use")
+	pflags.BoolVarP(&c.tagged, "yes", "", false, "commit dangerous actions, e.g. delete")
+
+	pflags.StringVarP(&c.logLevel, "loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
+	pflags.IntVarP(&c.workers, "workers", "w", workerCount, "number of workers")
+	return rootCmd
+}
+func main() {
+	cmd := NewRootCommand()
+	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

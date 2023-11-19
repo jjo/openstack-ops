@@ -7,6 +7,7 @@ require (
 	github.com/gophercloud/gophercloud v1.7.0
 	github.com/jedib0t/go-pretty/v6 v6.4.8
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
+	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
