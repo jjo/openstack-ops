@@ -95,7 +95,10 @@ func cmdServer() *cobra.Command {
 	pflags.StringVarP(&c.excludeRe, "exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
 
 	pflags.StringVarP(&c.action, "action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
-	cmd.MarkPersistentFlagRequired("action")
+	err := cmd.MarkPersistentFlagRequired("action")
+	if err != nil {
+		log.Fatalf("MarkPersistentFlagRequired: %v", err)
+	}
 
 	pflags.StringVarP(&c.output, "output", "o", "table", "output format: table, json, csv, html, md")
 	pflags.IntVarP(&c.nDays, "days", "d", 60, "instances older than `days`")

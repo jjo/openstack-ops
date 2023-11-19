@@ -52,6 +52,9 @@ $(TARGET): $(SRC)
 gofumpt:
 	gofumpt -w $(SRC)
 
+lint:
+	golangci-lint run ./...
+
 clean:
 	rm -f $(TARGET) out/*
 
