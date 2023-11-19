@@ -136,7 +136,7 @@ func setupTest(_ *testing.T) func(t *testing.T) {
 	}
 }
 
-func Test_runMain(t *testing.T) {
+func Test_runServerMain(t *testing.T) {
 	type args struct {
 		opts cliOptions
 	}
@@ -148,7 +148,7 @@ func Test_runMain(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			"runMain: bad logLevel",
+			"runServerMain: bad logLevel",
 			args{
 				cliOptions{
 					action:   "list",
@@ -160,7 +160,7 @@ func Test_runMain(t *testing.T) {
 			true,
 		},
 		{
-			"runMain: bad action",
+			"runServerMain: bad action",
 			args{
 				cliOptions{
 					action:   "listfoo",
@@ -172,7 +172,7 @@ func Test_runMain(t *testing.T) {
 			true,
 		},
 		{
-			"runMain: bad output",
+			"runServerMain: bad output",
 			args{
 				cliOptions{
 					action:   "list",
@@ -184,7 +184,7 @@ func Test_runMain(t *testing.T) {
 			true,
 		},
 		{
-			"runMain: list all from 0 days ago",
+			"runServerMain: list all from 0 days ago",
 			args{
 				cliOptions{
 					action:    "list",
@@ -203,7 +203,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list all from just after newest",
+			"runServerMain: list all from just after newest",
 			args{
 				cliOptions{
 					action:    "list",
@@ -222,7 +222,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list oldest",
+			"runServerMain: list oldest",
 			args{
 				cliOptions{
 					action:    "list",
@@ -241,7 +241,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list tagged (one instance)",
+			"runServerMain: list tagged (one instance)",
 			args{
 				cliOptions{
 					action:    "list",
@@ -260,7 +260,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list tagged (no instance)",
+			"runServerMain: list tagged (no instance)",
 			args{
 				cliOptions{
 					action:    "list",
@@ -279,7 +279,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list includeRe (one instance)",
+			"runServerMain: list includeRe (one instance)",
 			args{
 				cliOptions{
 					action:    "list",
@@ -298,7 +298,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list includeRe (one instance)",
+			"runServerMain: list includeRe (one instance)",
 			args{
 				cliOptions{
 					action:    "list",
@@ -317,7 +317,7 @@ func Test_runMain(t *testing.T) {
 			false,
 		},
 		{
-			"runMain: list exclude (no instance)",
+			"runServerMain: list exclude (no instance)",
 			args{
 				cliOptions{
 					action:    "list",
@@ -350,7 +350,7 @@ func Test_runMain(t *testing.T) {
 		defer os.Remove(outFile.Name())
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := runMain(tt.args.opts, outFile)
+			err := runServerMain(tt.args.opts, outFile)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
