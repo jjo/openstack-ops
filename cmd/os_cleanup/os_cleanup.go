@@ -41,7 +41,7 @@ func projectToEmailFunc(resource openstack.OSResourceInterface) string {
 
 var osClient openstack.OSClientInterface
 
-func runMain(opts cliOptions, outFile *os.File) error {
+func runServerMain(opts cliOptions, outFile *os.File) error {
 	_, err := logger.SetLevel(opts.logLevel)
 	if err != nil {
 		return err
@@ -81,23 +81,21 @@ func runMain(opts cliOptions, outFile *os.File) error {
 	return actionRun(instances, actionCode, outputCode, outFile, &opts)
 }
 
-func root(cmd *cobra.Command, args []string) error {
-	return runMain(c, os.Stdout)
-}
-
-func NewRootCommand() *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:   "os_cleanup",
-		Short: "Cleanup unused openstack resources",
-		RunE:  root,
+func cmdServer() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "server",
+		Short: "Cleanup unused openstack `server` resources (VM intances)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runServerMain(c, os.Stdout)
+		},
 	}
-	pflags := rootCmd.PersistentFlags()
+	pflags := cmd.PersistentFlags()
 
 	pflags.StringVarP(&c.includeRe, "include-re", "i", "(.+)__(alumno|gmail).*", "regex for instance projects to include")
 	pflags.StringVarP(&c.excludeRe, "exclude-re", "e", "", "regex for instance projects,names,etc to exclude")
 
 	pflags.StringVarP(&c.action, "action", "a", "", "action to perform: list, stop, start, delete, tag, untag")
-	rootCmd.MarkPersistentFlagRequired("action")
+	cmd.MarkPersistentFlagRequired("action")
 
 	pflags.StringVarP(&c.output, "output", "o", "table", "output format: table, json, csv, html, md")
 	pflags.IntVarP(&c.nDays, "days", "d", 60, "instances older than `days`")
@@ -108,6 +106,14 @@ func NewRootCommand() *cobra.Command {
 
 	pflags.StringVarP(&c.logLevel, "loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
 	pflags.IntVarP(&c.workers, "workers", "w", workerCount, "number of workers")
+	return cmd
+}
+func NewRootCommand() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "os_cleanup",
+		Short: "Cleanup unused openstack resources",
+	}
+	rootCmd.AddCommand(cmdServer())
 	return rootCmd
 }
 func main() {

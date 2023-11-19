@@ -9,12 +9,12 @@ GOARCH:=$(shell go env GOARCH)
 SRC:= $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 TARGET:=build/os_cleanup
-RUN=./$(TARGET)	$(ARGS) $(X)
+RUN=./$(TARGET)	server $(ARGS) $(X)
 
 all: build
 
 test:
-	go test --count=1 -race ./...
+	go test -v --count=1 -race ./...
 
 build: $(TARGET)
 
