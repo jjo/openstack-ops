@@ -82,9 +82,9 @@ func runMain(opts cliOptions, outFile *os.File) error {
 }
 
 func root(cmd *cobra.Command, args []string) error {
-	err := runMain(c, os.Stdout)
-	return err
+	return runMain(c, os.Stdout)
 }
+
 func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "os_cleanup",
