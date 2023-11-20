@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/barkimedes/go-deepcopy"
 	"github.com/stretchr/testify/require"
 
 	"github.com/jjo/openstack-ops/pkg/openstack"
@@ -161,6 +162,10 @@ func Test_actionPerResource(t *testing.T) {
 		actionCode int
 	}
 
+	i, _ := deepcopy.Anything(mockInstances)
+	instances := i.([]openstack.OSResourceInterface)
+
+	// XXX(jjo): still needs fixing (?)
 	//t.Parallel()
 
 	tests := []struct {
@@ -170,27 +175,27 @@ func Test_actionPerResource(t *testing.T) {
 	}{
 		{
 			"actionPerResource: Delete() calls",
-			args{mockInstances, DELETE},
+			args{instances, DELETE},
 			func(m *mockOSResource) int { return m.calledDelete },
 		},
 		{
 			"actionPerResource: Stop() calls",
-			args{mockInstances, STOP},
+			args{instances, STOP},
 			func(m *mockOSResource) int { return m.calledStop },
 		},
 		{
 			"actionPerResource: Start() calls",
-			args{mockInstances, START},
+			args{instances, START},
 			func(m *mockOSResource) int { return m.calledStart },
 		},
 		{
 			"actionPerResource: Tag() calls",
-			args{mockInstances, TAG},
+			args{instances, TAG},
 			func(m *mockOSResource) int { return m.calledTag },
 		},
 		{
 			"actionPerResource: Untag() calls",
-			args{mockInstances, UNTAG},
+			args{instances, UNTAG},
 			func(m *mockOSResource) int { return m.calledUntag },
 		},
 	}
