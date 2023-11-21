@@ -14,7 +14,7 @@ RUN=./$(TARGET)	server $(ARGS) $(X)
 all: build
 
 test:
-	go test -v --count=1 -race ./...
+	go test -v --count=3 -race ./...
 
 build: $(TARGET)
 
@@ -31,13 +31,15 @@ out/list.%: $(TARGET)
 list-tagged: ARGS=--tagged -d0
 list-tagged: run-list
 
-#step-01-tag: X=--yes
+step-01-tag: X=--yes
 step-01-tag: run-tag output
 
 #step-02-stop: X=--yes
+step-02-stop: X=--tagged --yes
 step-02-stop: run-stop output
 
-#step-03-stop: X=--yes
+#step-03-delete: X=--yes
+step-03-delete: X=--tagged --yes
 step-03-delete: run-delete output
 
 # E.g.:

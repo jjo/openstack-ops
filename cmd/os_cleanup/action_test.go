@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/barkimedes/go-deepcopy"
 	"github.com/stretchr/testify/require"
 
 	"github.com/jjo/openstack-ops/pkg/openstack"
@@ -72,6 +71,7 @@ func Test_actionRun(t *testing.T) {
 		outputCode int
 	}
 
+	mockInstances := NewMockInstances()
 	t.Parallel()
 
 	tests := []struct {
@@ -115,9 +115,6 @@ func Test_actionRun(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tearDownTest := setupTest(t)
-		defer tearDownTest(t)
-
 		opts := cliOptions{}
 
 		outFile, err := os.CreateTemp("", "testout")
@@ -158,15 +155,10 @@ func Test_actionRun(t *testing.T) {
 
 func Test_actionPerResource(t *testing.T) {
 	type args struct {
-		resources  []openstack.OSResourceInterface
 		actionCode int
 	}
 
-	i, _ := deepcopy.Anything(mockInstances)
-	instances := i.([]openstack.OSResourceInterface)
-
-	// XXX(jjo): still needs fixing (?)
-	//t.Parallel()
+	t.Parallel()
 
 	tests := []struct {
 		name       string
@@ -175,53 +167,52 @@ func Test_actionPerResource(t *testing.T) {
 	}{
 		{
 			"actionPerResource: Delete() calls",
-			args{instances, DELETE},
+			args{DELETE},
 			func(m *mockOSResource) int { return m.calledDelete },
 		},
 		{
 			"actionPerResource: Stop() calls",
-			args{instances, STOP},
+			args{STOP},
 			func(m *mockOSResource) int { return m.calledStop },
 		},
 		{
 			"actionPerResource: Start() calls",
-			args{instances, START},
+			args{START},
 			func(m *mockOSResource) int { return m.calledStart },
 		},
 		{
 			"actionPerResource: Tag() calls",
-			args{instances, TAG},
+			args{TAG},
 			func(m *mockOSResource) int { return m.calledTag },
 		},
 		{
 			"actionPerResource: Untag() calls",
-			args{instances, UNTAG},
+			args{UNTAG},
 			func(m *mockOSResource) int { return m.calledUntag },
 		},
 	}
 
 	for _, tt := range tests {
-		tearDownTest := setupTest(t)
-		defer tearDownTest(t)
 
 		t.Run(tt.name, func(t *testing.T) {
+			resources := NewMockInstances()
 			opts := cliOptions{}
 			// Should show function (Delete, Stop, etc) called once
 			opts.doit = true
-			err := actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			err := actionPerResource(resources, tt.args.actionCode, &opts)
 			if err != nil {
 				t.Error(err)
 			}
-			for _, m := range tt.args.resources {
+			for _, m := range resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)
 			}
 			// Should not increase called count (doit=false)
 			opts.doit = false
-			err = actionPerResource(tt.args.resources, tt.args.actionCode, &opts)
+			err = actionPerResource(resources, tt.args.actionCode, &opts)
 			if err != nil {
 				t.Error(err)
 			}
-			for _, m := range tt.args.resources {
+			for _, m := range resources {
 				require.Equal(t, 1, tt.wantedCall(m.(*mockOSResource)), tt.name)
 			}
 		})

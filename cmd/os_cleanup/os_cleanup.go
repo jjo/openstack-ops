@@ -39,9 +39,14 @@ func projectToEmailFunc(resource openstack.OSResourceInterface) string {
 	return mailRe.ReplaceAllString(resource.GetProjectName(), `$1@$2`)
 }
 
-var osClient openstack.OSClientInterface
+func NewOSClient(opts cliOptions) openstack.OSClientInterface {
+	osClient := openstack.NewOSClient().
+		WithWorkers(opts.workers).
+		WithProjectToEmail(projectToEmailFunc)
+	return osClient
+}
 
-func runServerMain(opts cliOptions, outFile *os.File) error {
+func runServerMain(osClient openstack.OSClientInterface, opts cliOptions, outFile *os.File) error {
 	_, err := logger.SetLevel(opts.logLevel)
 	if err != nil {
 		return err
@@ -62,13 +67,6 @@ func runServerMain(opts cliOptions, outFile *os.File) error {
 	// Calculate the timestamp for nDays ago
 	nDaysAgo := time.Now().AddDate(0, 0, -opts.nDays)
 
-	// Ease unittesting (by overriding osClient)
-	if osClient == nil {
-		osClient = openstack.NewOSClient().
-			WithWorkers(opts.workers).
-			WithProjectToEmail(projectToEmailFunc)
-	}
-
 	filter := openstack.NewOSResourceFilter(nDaysAgo, opts.includeRe, opts.excludeRe, opts.tagValue, opts.tagged)
 	filterFunc := func(resource openstack.OSResourceInterface) bool {
 		return filter.Run(resource)
@@ -82,11 +80,12 @@ func runServerMain(opts cliOptions, outFile *os.File) error {
 }
 
 func cmdServer() *cobra.Command {
+	var osClient openstack.OSClientInterface
 	cmd := &cobra.Command{
 		Use:   "server",
 		Short: "Cleanup unused openstack `server` resources (VM intances)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServerMain(c, os.Stdout)
+			return runServerMain(osClient, c, os.Stdout)
 		},
 	}
 	pflags := cmd.PersistentFlags()
@@ -105,10 +104,11 @@ func cmdServer() *cobra.Command {
 
 	pflags.BoolVarP(&c.tagged, "tagged", "t", false, "list only tagged instances")
 	pflags.StringVarP(&c.tagValue, "tag-value", "", osCleanupTag, "tag value to use")
-	pflags.BoolVarP(&c.tagged, "yes", "", false, "commit dangerous actions, e.g. delete")
+	pflags.BoolVarP(&c.doit, "yes", "", false, "commit dangerous actions, e.g. delete")
 
 	pflags.StringVarP(&c.logLevel, "loglevel", "l", "info", "set log level: debug, info, notice, warning, error, critical")
 	pflags.IntVarP(&c.workers, "workers", "w", workerCount, "number of workers")
+	osClient = NewOSClient(c)
 	return cmd
 }
 func NewRootCommand() *cobra.Command {

@@ -101,20 +101,40 @@ func newMockOSResource(id, name, project string, nDaysAgo int, tags []string) *m
 		Created: time.Now().AddDate(0, 0, -nDaysAgo),
 	}
 }
+func copyMockOSResource(m *mockOSResource) *mockOSResource {
+	return &mockOSResource{
+		ID:      m.ID,
+		Name:    m.Name,
+		Project: m.Project,
+		Tags:    m.Tags,
+		Created: m.Created,
+	}
+}
 
 var (
-	nDays1        = 30
-	nDays2        = 60
-	m1            = newMockOSResource("1", "one", "foo__bar.com_project", nDays1, []string{"tag1"})
-	m2            = newMockOSResource("2", "two", "foo__bar.com_project", nDays2, []string{"tag2"})
-	mockInstances = []openstack.OSResourceInterface{m1, m2}
+	nDays1 = 30
+	nDays2 = 60
+	m1     = newMockOSResource("1", "one", "foo__bar.com_project", nDays1, []string{"tag1"})
+	m2     = newMockOSResource("2", "two", "foo__bar.com_project", nDays2, []string{"tag2"})
 )
+
+func NewMockOSClient() openstack.OSClientInterface {
+	return &mockOSclient{}
+}
+func NewMockInstances() []openstack.OSResourceInterface {
+	instances := []openstack.OSResourceInterface{
+		copyMockOSResource(m1),
+		copyMockOSResource(m2),
+	}
+	return instances
+}
 
 func (m *mockOSclient) GetInstances(
 	filter func(r openstack.OSResourceInterface) bool) (
 	[]openstack.OSResourceInterface, error,
 ) {
 	instances := make([]openstack.OSResourceInterface, 0)
+	mockInstances := NewMockInstances()
 
 	for _, i := range mockInstances {
 		instance := i.(*mockOSResource)
@@ -130,16 +150,12 @@ func (m *mockOSclient) GetInstances(
 	return instances, nil
 }
 
-func setupTest(_ *testing.T) func(t *testing.T) {
-	osClient = &mockOSclient{}
-	return func(t *testing.T) {
-	}
-}
-
 func Test_runServerMain(t *testing.T) {
 	type args struct {
 		opts cliOptions
 	}
+
+	mockInstances := NewMockInstances()
 
 	tests := []struct {
 		name          string
@@ -336,11 +352,8 @@ func Test_runServerMain(t *testing.T) {
 			false,
 		},
 	}
-	osClient = &mockOSclient{}
 
 	for _, tt := range tests {
-		tearDownTest := setupTest(t)
-		defer tearDownTest(t)
 
 		outFile, err := os.CreateTemp("", "testout")
 		if err != nil {
@@ -349,8 +362,10 @@ func Test_runServerMain(t *testing.T) {
 
 		defer os.Remove(outFile.Name())
 
+		osClient := NewMockOSClient()
+
 		t.Run(tt.name, func(t *testing.T) {
-			err := runServerMain(tt.args.opts, outFile)
+			err := runServerMain(osClient, tt.args.opts, outFile)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
