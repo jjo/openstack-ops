@@ -163,6 +163,7 @@ func (osClient *OSClient) GetInstances(
 				InstanceID:   server.Server.ID,
 				Created:      server.Server.Created,
 				VMState:      server.VmState,
+				TaskState:    server.TaskState,
 				PowerState:   server.PowerState.String(),
 				ProjectName:  projectName,
 				Tags:         serverTags,

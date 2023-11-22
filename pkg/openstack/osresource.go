@@ -34,6 +34,7 @@ type Instance struct {
 	ProjectName  string    `json:"project"`
 	Email        string    `json:"email"`
 	VMState      string    `json:"vmstate"`
+	TaskState    string    `json:"taskstate"`
 	PowerState   string    `json:"powerstate"`
 	Tags         []string  `json:"tags"`
 }
@@ -44,7 +45,7 @@ type ServerWithExt struct {
 }
 
 func GetRowHeader([]OSResourceInterface) []interface{} {
-	return []interface{}{"Instance_Name", "Instance_ID", "Created", "VMState", "PowerState", "Project", "Email", "Tags"}
+	return []interface{}{"Instance_Name", "Instance_ID", "Created", "VMState", "PowerState", "TaskState", "Project", "Email", "Tags"}
 }
 
 func (instance *Instance) GetData() (string, string, string) {
@@ -58,6 +59,7 @@ func (instance *Instance) GetRow() []interface{} {
 		instance.Created,
 		instance.VMState,
 		instance.PowerState,
+		instance.TaskState,
 		instance.ProjectName,
 		instance.Email,
 		instance.Tags,
